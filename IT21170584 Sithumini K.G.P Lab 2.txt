@@ -1,0 +1,190 @@
+-- IT21170584
+-- Sithumini K.G.P
+-- Labsheet 2
+
+-- (a)
+CREATE TYPE dept_t;
+Create Type emp_t; 
+     
+CREATE TYPE emp_t AS OBJECT (  
+    EMPNO CHAR(6),  
+    FIRSTNAME VARCHAR(12), 
+    LASTNAME VARCHAR(15), 
+    WORKDEPT REF dept_t, 
+    SEX CHAR(1), 
+    BIRTHDATE DATE, 
+    SALARY NUMBER(8,2) 
+); 
+ 
+CREATE TYPE dept_t AS OBJECT (  
+    DEPTNO CHAR(3),  
+    DEPTNAME VARCHAR(36), 
+    MGRNO REF emp_t, 
+    ADMRDEPT CHAR(3)  
+); 
+  -- (b)
+CREATE TABLE OREMP OF emp_t( 
+    EMPNO PRIMARY KEY, 
+    FIRSTNAME NOT NULL, 
+    LASTNAME NOT NULL 
+); 
+ 
+CREATE TABLE ORDEPT OF dept_t( 
+    DEPTNO PRIMARY KEY, 
+    DEPTNAME NOT NULL, 
+    FOREIGN KEY (MGRNO) REFERENCES OREMP(EMPNO), 
+    FOREIGN KEY (ADMRDEPT) REFERENCES ORDEPT(DEPTNO) 
+); 
+
+-- (c)
+-- Inserting data into OREMP table
+INSERT INTO OREMP 
+VALUES(emp_t('000010', 'CHRISTINE', 'HASS', NULL, 'F', '14-AUG-1953', 72750));
+
+INSERT INTO OREMP 
+VALUES(emp_t('000020', 'MICHAEL', 'THOMPSON', NULL, 'F', '14-AUG-1953', 72750));
+
+INSERT INTO OREMP 
+VALUES(emp_t('000030', 'SALLY', 'KWAN', NULL, 'F', '14-AUG-1953', 72750));
+
+INSERT INTO OREMP 
+VALUES(emp_t('000060', 'IRVING', 'STERN', NULL, 'F', '14-AUG-1953', 72750));
+
+INSERT INTO OREMP 
+VALUES(emp_t('000070', 'EVA', 'PULASKI', NULL, 'F', '14-AUG-1953', 72750));
+
+INSERT INTO OREMP 
+VALUES(emp_t('000050', 'JOHN', 'GEYER', NULL, 'F', '14-AUG-1953', 72750));
+
+INSERT INTO OREMP 
+VALUES(emp_t('000090', 'EILEEN', 'HENDERSON', NULL, 'F', '14-AUG-1953', 72750));
+
+INSERT INTO OREMP 
+VALUES(emp_t('000100', 'THEODORE', 'SPENSER', NULL, 'F', '14-AUG-1953', 72750));
+
+
+-- Inserting data into ORDEPT table
+INSERT INTO ORDEPT 
+VALUES (dept_t('A00', 'SPIFFY COMPUTER SERVICE DIV.', (SELECT REF(e) FROM OREMP e WHERE e.EMPNO = '000010'), NULL));
+
+INSERT INTO ORDEPT 
+VALUES (dept_t('B01', 'PLANNING', (SELECT REF(e) FROM oremp e WHERE e.empNo = '000020'), NULL));
+
+INSERT INTO ORDEPT 
+VALUES (dept_t('C01', 'INFORMATION CENTER', (SELECT REF(e) FROM oremp e WHERE e.empNo = '000030'), NULL));
+
+INSERT INTO ORDEPT 
+VALUES (dept_t('D01', 'DEVELOPMENT CENTER', (SELECT REF(e) FROM oremp e WHERE e.empNo = '000060'), NULL));
+
+UPDATE OREMP e
+SET e.workdept = (SELECT REF(d) FROM ORDEPT d WHERE D.deptNo = 'A00')
+WHERE e.empNo = '000010'
+/
+UPDATE oremp e
+SET e.workDept = (SELECT REF(d) FROM ORDEPT d WHERE d.deptNo = 'B01')
+WHERE e.empNo = '000020'
+/
+UPDATE oremp e
+SET e.workDept = (SELECT REF(d) FROM ORDEPT d WHERE d.deptNo = 'C01')
+WHERE e.empNo = '000030'
+/
+UPDATE oremp e
+SET e.workDept = (SELECT REF(d) FROM ORDEPT d WHERE d.deptNo = 'D01')
+WHERE e.empNo = '000060'
+/
+UPDATE oremp e
+SET e.workDept = (SELECT REF(d) FROM ORDEPT d WHERE d.deptNo = 'D01')
+WHERE e.empNo = '000070'
+/
+UPDATE oremp e
+SET e.workDept = (SELECT REF(d) FROM ORDEPT d WHERE d.deptNo = 'C01')
+WHERE e.empNo = '000050'
+/
+UPDATE oremp e
+SET e.workDept = (SELECT REF(d) FROM ORDEPT d WHERE d.deptNo = 'B01')
+WHERE e.empNo = '000090'
+/
+UPDATE oremp e
+SET e.workDept = (SELECT REF(d) FROM ORDEPT d WHERE d.deptNo = 'B01')
+WHERE e.empNo = '000100'
+/
+
+
+
+UPDATE ORDEPT d
+SET d.admrDept = (SELECT REF(d) from ORDEPT d where d.deptNo='A00')
+WHERE d.deptNo = 'A00'
+/
+UPDATE ORDEPT d
+SET d.admrDept = (SELECT REF(d) FROM ORDEPT d WHERE d.deptNo='A00')
+WHERE d.deptNo = 'B01'
+/
+UPDATE ORDEPT d
+SET d.admrDept = (SELECT REF(d) FROM ORDEPT d WHERE d.deptNo='A00')
+WHERE d.deptNo = 'C01'
+/
+UPDATE ORDEPT d
+SET d.admrDept = (SELECT REF(d) FROM ORDEPT d WHERE d.deptNo='C01')
+WHERE d.deptNo = 'D01'
+/
+
+-- (2) (a)
+
+SELECT d.deptName , d.mgrno.lastName
+FROM ORDEPT d
+/
+
+-- (2) (b)
+
+SELECT e.empNo, e.lastName, e.workdept.deptName
+FROM OREMP e
+/
+
+-- (2) (c)
+
+SELECT d.deptNo, d.deptName, d.admrdept.deptName 
+FROM ORDEPT d
+/
+
+-- (2) (d)
+
+SELECT d.deptNo, d.deptName, d.admrdept.deptName, d.admrdept.mgrno.lastName 
+FROM ORDEPT d
+/
+
+-- (2) (e)
+
+SELECT e.empNo,e.firstName,e.lastName,e.salary,e.workdept.mgrno.lastName,e.workdept.mgrno.salary
+FROM OREMP e
+/
+
+-- (2) (f)
+
+SELECT 
+    d.deptNo,
+    d.deptName,
+    (SELECT AVG(e.salary) FROM OREMP e WHERE DEREF(e.workdept).deptNo = d.deptNo AND e.sex = 'M') AS avg_salary_men,
+    (SELECT AVG(e.salary) FROM OREMP e WHERE DEREF(e.workdept).deptNo = d.deptNo AND e.sex = 'F') AS avg_salary_women
+FROM 
+    ORDEPT d
+/
+
+CONSTRAINT oremp_sex_chk CHECK (sex='M' OR sex='F' OR sex='m' OR sex='f'),
+
+CREATE TABLE ORDEPT OF dept_t(
+    CONSTRAINT ordept_pk PRIMARY KEY(deptNo),
+	CONSTRAINT ordept_deptName DEPTNAME NOT NULL,
+)
+/
+
+CREATE TABLE OREMP OF emp_t(
+    CONSTRAINT oremp_pk PRIMARY KEY(empNo),
+	CONSTRAINT oremp_firstName firstName NOT NULL,
+	CONSTRAINT oremp_lastName lastName NOT NULL,
+	CONSTRAINT oremp_sex_chk CHECK (sex='M' OR sex='F' OR sex='m' OR sex='f'),
+    CONSTRAINT oremp_workdept_fk FOREIGN KEY(workdept) REFERENCES ORDEPT
+)
+/
+
+ALTER TABLE ORDEPT ADD CONSTRAINT ordept_mgrno_fk FOREIGN KEY(mgrno) REFERENCES OREMP;
+ALTER TABLE ORDEPT ADD CONSTRAINT ordept_admrdept_fk FOREIGN KEY(admrdept) REFERENCES ORDEPT;
