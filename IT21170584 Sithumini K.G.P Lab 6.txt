@@ -1,0 +1,163 @@
+-- IT21170584
+-- Sithumini K.G.P
+-- Labsheet 6
+
+-- Exercise 01
+-- Create the table
+CREATE TABLE AdminDocs (
+    id INT PRIMARY KEY,
+    xDoc XML NOT NULL
+);
+
+-- Insert sample data
+INSERT INTO AdminDocs VALUES (1,
+'<catalog>
+ <product dept="WMN">
+ <number>557</number>
+ <name language="en">Fleece Pullover</name>
+ <colorChoices>navy black</colorChoices>
+ </product>
+ <product dept="ACC">
+ <number>563</number>
+ <name language="en">Floppy Sun Hat</name>
+ </product>
+ <product dept="ACC">
+ <number>443</number>
+ <name language="en">Deluxe Travel Bag</name>
+ </product>
+ <product dept="MEN">
+ <number>784</number>
+ <name language="en">Cotton Dress Shirt</name>
+ <colorChoices>white gray</colorChoices>
+ <desc>Our <i>favorite</i> shirt!</desc>
+ </product>
+</catalog>');
+
+INSERT INTO AdminDocs VALUES (2,
+'<doc id="123">
+ <sections>
+ <section num="1"><title>XML Schema</title></section>
+2 of 4
+ <section num="3"><title>Benefits</title></section>
+ <section num="4"><title>Features</title></section>
+ </sections>
+</doc>');
+
+-- Print the contents of the AdminDocs table
+SELECT * FROM AdminDocs;
+
+
+-- Exercise 02
+
+-- Execute the XPath queries
+SELECT id, xDoc.query('/catalog/product') 
+FROM AdminDocs;
+
+SELECT id, xDoc.query('//product') 
+FROM AdminDocs;
+
+SELECT id, xDoc.query('/*/product') 
+FROM AdminDocs;
+
+SELECT id, xDoc.query('/*/product[@dept="WMN"]') 
+FROM AdminDocs;
+
+SELECT id, xDoc.query('/*/child::product[attribute::dept="WMN"]') 
+FROM AdminDocs;
+
+SELECT id, xDoc.query('//product[dept="WMN"]') 
+FROM AdminDocs;
+
+SELECT id, xDoc.query('descendant-or-self::product[attribute::dept="WMN"]') FROM AdminDocs;
+
+SELECT id, xDoc.query('//product[number > 500]') 
+FROM AdminDocs WHERE id=1;
+
+SELECT id, xDoc.query('//product/number[. gt 500]') 
+FROM AdminDocs WHERE id=1;
+
+SELECT id, xDoc.query('/catalog/product[4]') 
+FROM AdminDocs WHERE id=1;
+
+
+-- Exercise 03
+
+SELECT id, xDoc.query('//product[number > 500][@dept="ACC"]') FROM AdminDocs WHERE id=1;
+SELECT id, xDoc.query('//product[number > 500][1]') FROM AdminDocs WHERE id=1;
+
+-- Execute XQuery expressions
+SELECT xDoc.query('
+  for $prod in //product
+  let $x := $prod/number
+  return $x'
+) 
+FROM AdminDocs
+WHERE id = 1;
+
+SELECT xDoc.query('
+  for $prod in //product
+  let $x := $prod/number
+  where $x > 500
+  return $x'
+) 
+FROM AdminDocs
+WHERE id = 1;
+
+SELECT xDoc.query('
+  for $prod in //product
+  let $x := $prod/number
+  return $x'
+) 
+FROM AdminDocs
+WHERE id = 1;
+
+SELECT xDoc.query('
+  for $prod in //product
+  let $x := $prod/number
+  where $x > 500
+  return (<Item>{$x}</Item>)'
+) 
+FROM AdminDocs
+WHERE id = 1;
+
+SELECT xDoc.query('
+  for $prod in //product[number > 500]
+  let $x := $prod/number
+  return (<Item>{$x}</Item>)'
+) AS result
+FROM AdminDocs
+WHERE id = 1;
+
+SELECT xDoc.query('
+  for $prod in //product
+  let $x := $prod/number
+  where $x > 500
+  return (<Item>{data($x)}</Item>)'
+) 
+FROM AdminDocs
+WHERE id = 1;
+
+SELECT xDoc.query('
+  for $prod in //product
+  let $x := $prod/number
+  return if ($x > 500) 
+  then <book>{data($x)}</book> 
+  else <paper>{data($x)}</paper>'
+) 
+FROM AdminDocs
+WHERE id = 1;
+
+-- Exercise 04
+
+select * from AdminDocs where id=2;
+
+UPDATE AdminDocs SET xDoc.modify('
+ insert
+ <section num="2">
+ <title>Background</title>
+ </section>
+ after (/doc//section[@num=1])[1]');
+
+UPDATE AdminDocs SET xDoc.modify('
+ delete
+ //section[@num="2"]');

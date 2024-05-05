@@ -1,0 +1,161 @@
+-- IT21170584
+-- Sithumini K.G.P
+-- Labsheet 4
+
+
+CREATE TYPE product_type AS OBJECT(
+		productID CHAR(5),
+		name VARCHAR2(20),
+		price FLOAT,
+		
+		MEMBER FUNCTION priceInYen(rate FLOAT)
+		RETURN FLOAT
+		
+		MEMBER FUNCTION priceInUSD(rate FLOAT) 
+		RETURN FLOAT
+		
+		CREATE TYPE BODY product_type AS
+		MEMBER FUNCTION priceInYen(rate FLOAT)
+		RETURN FLOAT
+	
+		IS
+			BEGIN
+				RETURN rate*SELF.price;
+			END;
+		END;
+)
+
+CREATE TABLE product_tbl OF product_type;
+
+ALTER TYPE product_type
+ADD MEMBER FUNCTION priceInUSD(rate FLOAT)
+RETURN FLOAT
+CASCADE;
+
+CREATE OR REPLACE TYPE TYPE BODY product_type
+AS
+	MEMBER FUNCTION priceInYen(rate FLOAT)
+	RETURN FLOAT
+	IS 
+		BEGIN
+			RETURN rate*SELF.price;
+		END priceInYen;
+
+	MEMBER FUNCTION priceInUSD(rate FLOAT)
+	RETURN FLOAT
+	IS 
+		BEGIN
+			RETURN rate*SELF.price;
+		END priceInUSD;
+	END;
+
+
+SELECT p.name, p.price, p.priceInYen(100), p.priceInUSD(200)
+FROM product_tbl p
+
+
+-- 1)
+-- a
+ALTER TYPE stock_ty
+ADD MEMBER FUNCTION yield return FLOAT
+cascade
+/
+
+CREATE or REPLACE TYPE body stock_ty 
+AS MEMBER FUNCTION yield 
+RETURN FLOAT IS
+	BEGIN
+		RETURN ((self.ldivident/self.cprice)*100);
+	END;
+END;
+
+SELECT s.company, s.yield();
+FROM stock_tbl s
+
+-- b
+ALTER TYPE stock_ty
+ADD MEMBER FUNCTION AUDtoUSD(rate float) RETURN FLOAT
+CASCADE
+/
+
+CREATE or REPLACE TYPE BODY stock_ty AS
+MEMBER FUNCTION yield RETURN float is 
+	BEGIN
+		RETURN ((self.ldivident/self.cprice)*100);
+	END yield;
+MEMBER FUNCTION AUDtoUSD(rate FLOAT) RETURN FLOAT IS
+	BEGIN
+		RETURN self.cprice*rate;
+	END AUDtoUSD;
+END;	
+SELECT s.company, s.yield, s.AUDtoUSD(100)
+FROM stock_tbl s
+
+-- c
+ALTER TYPE stock_ty
+ADD MEMBER FUNCTION no_of_trades RETURN INTEGER
+CASCADE
+/
+CREATE or REPLACE TYPE BODY stock_ty AS
+MEMBER FUNCTION yield RETURN float is 
+	BEGIN
+		RETURN ((self.ldivident/self.cprice)*100);
+	END yield;
+MEMBER FUNCTION AUDtoUSD(rate FLOAT) RETURN FLOAT IS
+	BEGIN
+		RETURN self.cprice*rate;
+	END AUDtoUSD;
+MEMBER FUNCTION no_of_trades RETURN INTEGER IS
+	COUNTT INTEGER
+	BEGIN
+		SELECT count(e.column_value) INTO countt
+		FROM TABLE(self.ex_traded) e;
+		RETURN countt;
+	END no_of_trades;
+END;
+
+SELECT s.company, s.yield(), s.AUDtoUSD(100), s.no_of_trades()
+FROM stock_tbl s 
+
+-- d 
+ALTER TYPE client_ty
+ADD MEMBER FUNCTION tot_purchase_val RETURN FLOAT
+CASCADE
+/
+
+CREATE TYPE BODY client_ty AS
+MEMBER FUNCTION tot_purchase_val RETURN FLOAT IS
+	pvalue FLOAT;
+	BEGIN
+		SELECT SUM(i.pprice*i.qty) INTO pvalue
+		FROM TABLE(self.invesments) i;
+		RETURN pvalue;
+	END;
+END;
+
+SELECT c.cno, c.tot_purchase_val()
+FROM client_tbl c
+
+-- e
+ALTER TYPE client_ty
+ADD MEMBER FUNCTION tot_purchase_val RETURN FLOAT
+CASCADE
+/
+
+CREATE or REPLACE TYPE BODY client_ty AS
+MEMBER FUNCTION tot_purchase_val RETURN FLOAT IS
+	pvalue FLOAT;
+	BEGIN
+		SELECT SUM(i.pprice*i.qty) INTO pvalue
+		FROM TABLE(self.invesments) i;
+		RETURN pvalue;
+	END tot_purchase_val;
+
+MEMBER FUNCTION tot_profit RETURN float IS
+	profit FLOAT;
+	BEGIN
+		SELECT SUM((i.company.cprice - i.pprice)* i.qty) INTO profit
+		FROM TABLE (self.invesments) i;
+		RETURN profit;
+	END tot_profit
+END;

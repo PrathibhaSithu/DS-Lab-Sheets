@@ -1,0 +1,136 @@
+-- IT21170584
+-- Sithumini K.G.P
+-- Labsheet 3
+
+CREATE TYPE excharray AS VARRAY(5) OF varchar(12);
+ 
+/
+ 
+CREATE TYPE share_t AS OBJECT( 
+    cname varchar(12),  
+    cprice number(6,2), 
+    exchanges excharray, 
+    dividend number(4,2),  
+    earnings number(6,2) 
+);
+ 
+/
+ 
+CREATE TYPE Address AS OBJECT( 
+    street_number number, 
+    street_name varchar(15), 
+    suburb varchar(15), 
+    state varchar(15), 
+    pin number(4) 
+);
+ 
+/
+ 
+CREATE TYPE invest_t AS OBJECT( 
+    COMPANY REF share_t, 
+    PURCHASE_PRICE number(6,2), 
+    IDATE date, 
+    QTY number(6) 
+);
+ 
+/
+ 
+CREATE TYPE invest_list AS TABLE OF invest_t;
+ 
+/
+ 
+CREATE TABLE CLIENTS( 
+    name varchar(20) PRIMARY KEY, 
+    address Address, 
+    investments invest_list) 
+    NESTED TABLE investments STORE AS invest_ntb
+;
+ 
+CREATE TABLE STOCKS OF share_t(cname PRIMARY KEY)
+;
+ 
+INSERT INTO STOCKS VALUES('BHP',10.50,excharray('Sydney','New York'),1.50,3.20)
+;
+ 
+INSERT INTO STOCKS VALUES('IBM',70.00,excharray('New York','London','Tokyo'),4.25,10.00)
+;
+ 
+INSERT INTO STOCKS VALUES('INTEL',76.50,excharray('New York','London'),5.00,12.40)
+;
+ 
+INSERT INTO STOCKS VALUES('FORD',40.00,excharray('New York'),2.00,8.50)
+;
+ 
+INSERT INTO STOCKS VALUES('GM',60.00,excharray('New York'),2.50,9.20)
+;
+ 
+INSERT INTO STOCKS VALUES('INFOSYS',45.00,excharray('New York'),3.00,7.80)
+;
+ 
+INSERT INTO CLIENTS VALUES('John Smith',Address(3,'East Av','Bentley','WA',6102), 
+    invest_list(invest_t( 
+		(SELECT REF(S) FROM STOCKS S WHERE S.cname = 'BHP'), 
+		12.00,DATE'2001-10-02',1000), 
+    		invest_t((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'BHP'), 
+			10.50,DATE'2002-06-08',2000), 
+    		invest_t((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'IBM'), 
+			58.00,DATE'2000-02-12',500), 
+        	invest_t((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'IBM'), 
+			65.00,DATE'2001-04-10',1200), 
+    		invest_t((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'INFOSYS'), 
+			64.00,DATE'2001-08-11',1000)))
+;
+ 
+INSERT INTO CLIENTS VALUES('Jill Brody', Address(4,'Bent St','Perth','WA',6001), 
+    invest_list(invest_t((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'INTEL'), 
+			35.00,DATE'2000-01-30',300), 
+    			invest_t((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'INTEL'), 
+			54.00,DATE'2001-01-30',400), 
+    			invest_t((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'INTEL'), 
+			60.00,DATE'2001-10-02',200), 
+    			invest_t((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'FORD'), 
+			40.00,DATE'1999-10-05',300), 
+    			invest_t((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'GM'), 
+			55.50,DATE'2000-12-12',500)))
+;
+ 
+SELECT C.name, I.COMPANY.cname , I.COMPANY.cprice, I.COMPANY.dividend, I.COMPANY.earnings 
+FROM CLIENTS C, TABLE(C.investments) I
+;
+ 
+SELECT C.name, I.COMPANY.cname, SUM(I.QTY), SUM(I.QTY*I.PURCHASE_PRICE)/SUM(I.QTY) 
+FROM Clients C, TABLE(C.investments) I 
+GROUP BY C.name, I.COMPANY.cname
+;
+ 
+SELECT I.Company.cname, C.name, SUM(I.QTY), SUM(I.QTY*I.PURCHASE_PRICE )AS CurrentPrice 
+FROM CLIENTS C, TABLE(C.investments) I, TABLE(I.Company.exchanges) E 
+WHERE 'New York' IN (E.COLUMN_VALUE) 
+GROUP BY I.Company.cname, C.name
+;
+ 
+SELECT C.name, SUM(I.QTY*I.PURCHASE_PRICE) AS TotalPurchaseValue 
+FROM CLIENTS C, TABLE(C.investments) I 
+GROUP BY C.name
+;
+ 
+SELECT C.name, SUM(I.QTY*I.Company.cprice) CurrentValue, '-' , SUM(I.QTY*I.PURCHASE_PRICE) PurchaseValue, '=' , SUM(I.QTY*I.Company.cprice)-SUM(I.QTY*I.PURCHASE_PRICE) BookProfit 
+FROM CLIENTS C, TABLE(C.investments) I 
+GROUP BY C.name
+;
+ 
+INSERT INTO TABLE(SELECT C.investments FROM CLIENTS C WHERE C.name = 'Jill Brody') 
+VALUES((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'INTEL'),45.00,DATE'2001-08-11',1000)
+;
+ 
+DELETE TABLE(SELECT C.investments FROM CLIENTS C WHERE C.name = 'John Smith') I 
+WHERE I.COMPANY.cname = 'INFOSYS'
+;
+ 
+INSERT INTO TABLE(SELECT C.investments FROM CLIENTS C WHERE C.name = 'John Smith') 
+VALUES((SELECT REF(S) FROM STOCKS S WHERE S.cname = 'GM'),60.00,DATE'2000-12-12',500)
+;
+ 
+DELETE TABLE(SELECT C.investments FROM CLIENTS C WHERE C.name = 'Jill Brody') I 
+WHERE I.COMPANY.cname = 'GM'
+;

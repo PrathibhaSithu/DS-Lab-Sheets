@@ -1,0 +1,167 @@
+-- IT21170584
+-- Sithumini K.G.P
+-- Labsheet 5
+
+--Exercise 01
+DECLARE 
+   v_current_price NUMBER;
+BEGIN
+   SELECT current_price INTO v_current_price
+   FROM STOCK 
+   WHERE company = 'IBM';
+   
+   DBMS_OUTPUT.PUT_LINE('Current price in IBM Stock: ' || v_current_price);
+
+END;
+/
+
+--Exercise 02
+DECLARE
+    v_current_price NUMBER;
+BEGIN
+    -- Retrieve the current price of the stock for the IBM company
+    SELECT current_price INTO v_current_price
+    FROM STOCK
+    WHERE company = 'IBM';
+
+    -- Determine and display the message based on the current price
+    IF v_current_price < 45 THEN
+        DBMS_OUTPUT.PUT_LINE('Current price is very low!');
+    ELSIF v_current_price < 55 THEN
+        DBMS_OUTPUT.PUT_LINE('Current price is low!');
+    ELSIF v_current_price < 65 THEN
+        DBMS_OUTPUT.PUT_LINE('Current price is medium!');
+    ELSIF v_current_price < 75 THEN
+        DBMS_OUTPUT.PUT_LINE('Current price is medium high!');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Current price is high!');
+    END IF;
+END;
+/
+
+--Exercise 3
+--'FOR' loop
+DECLARE
+    num_rows CONSTANT NUMBER := 9;
+BEGIN
+    FOR i IN REVERSE 1..num_rows LOOP
+        FOR j IN 1..i LOOP
+            DBMS_OUTPUT.PUT(i || ' ');
+        END LOOP;
+        DBMS_OUTPUT.NEW_LINE;
+    END LOOP;
+END;
+/
+
+--'WHILE' loop
+DECLARE
+    num_rows CONSTANT NUMBER := 9;
+    i NUMBER := num_rows;
+BEGIN
+    WHILE i >= 1 LOOP
+        FOR j IN 1..i LOOP
+            DBMS_OUTPUT.PUT(i || ' ');
+        END LOOP;
+        DBMS_OUTPUT.NEW_LINE;
+        i := i - 1;
+    END LOOP;
+END;
+/
+
+--'LOOP' loop
+DECLARE
+    num_rows CONSTANT NUMBER := 9;
+    i NUMBER := num_rows;
+BEGIN
+    LOOP
+        EXIT WHEN i < 1;
+        FOR j IN 1..i LOOP
+            DBMS_OUTPUT.PUT(i || ' ');
+        END LOOP;
+        DBMS_OUTPUT.NEW_LINE;
+        i := i - 1;
+    END LOOP;
+END;
+/
+
+--Excercise 4
+DECLARE
+    v_bonus_stocks NUMBER;
+    v_bonus_date DATE;
+BEGIN
+    -- Initialize bonus values
+    v_bonus_stocks := 0;
+    v_bonus_date := TO_DATE('01-JAN-2000', 'DD-MON-YYYY');
+
+    -- Loop through purchases
+    FOR purchase_rec IN (
+        SELECT purchase_date, qty
+        FROM purchase_table
+        WHERE purchase_date < v_bonus_date
+    ) LOOP
+        -- Determine bonus stocks based on purchase date
+        IF purchase_rec.purchase_date < TO_DATE('01-JAN-2000', 'DD-MON-YYYY') THEN
+            v_bonus_stocks := 150;
+        ELSIF purchase_rec.purchase_date < TO_DATE('01-JAN-2001', 'DD-MON-YYYY') THEN
+            v_bonus_stocks := 100;
+        ELSE
+            v_bonus_stocks := 50;
+        END IF;
+
+        -- Update purchase table with bonus stocks
+        UPDATE purchase_table
+        SET qty = qty + v_bonus_stocks
+        WHERE purchase_date = purchase_rec.purchase_date;
+
+    END LOOP;
+
+END;
+/
+
+--Exercise 5
+DECLARE
+    v_bonus_stocks NUMBER;
+    v_bonus_date DATE;
+    
+    CURSOR c_purchase IS
+        SELECT purchase_date, qty
+        FROM purchase_table
+        ORDER BY purchase_date;
+
+    purchase_rec c_purchase%ROWTYPE;
+BEGIN
+    -- Initialize bonus values
+    v_bonus_stocks := 0;
+    v_bonus_date := TO_DATE('01-JAN-2000', 'DD-MON-YYYY');
+
+    -- Open cursor
+    OPEN c_purchase;
+
+    -- Fetch the first row
+    FETCH c_purchase INTO purchase_rec;
+
+    -- Loop through purchases
+    WHILE c_purchase%FOUND LOOP
+        -- Determine bonus stocks based on purchase date
+        IF purchase_rec.purchase_date < TO_DATE('01-JAN-2000', 'DD-MON-YYYY') THEN
+            v_bonus_stocks := 150;
+        ELSIF purchase_rec.purchase_date < TO_DATE('01-JAN-2001', 'DD-MON-YYYY') THEN
+            v_bonus_stocks := 100;
+        ELSE
+            v_bonus_stocks := 50;
+        END IF;
+
+        -- Update purchase table with bonus stocks
+        UPDATE purchase_table
+        SET qty = qty + v_bonus_stocks
+        WHERE CURRENT OF c_purchase;
+
+        -- Fetch the next row
+        FETCH c_purchase INTO purchase_rec;
+    END LOOP;
+
+    -- Close cursor
+    CLOSE c_purchase;
+
+END;
+/
